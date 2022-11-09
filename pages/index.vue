@@ -1,9 +1,30 @@
 <template>
-  <Tutorial/>
+  <div>
+    <div v-if="this.$auth.loggedIn">
+      Hello {{ this.$auth.user.name }}
+      <button @click="logout">Logout</button>
+    </div>
+    <div v-else>
+      Hello guest
+      <NuxtLink to="/login">
+        Login
+      </NuxtLink>
+    </div>
+    <Tutorial />
+  </div>
 </template>
 
 <script>
 export default {
-  name: 'IndexPage'
+  auth: false,
+  name: 'IndexPage',
+
+  methods: {
+    logout() {
+      console.log('hello')
+      this.$auth.logout();
+      this.$router.push('/')
+    }
+  }
 }
 </script>
