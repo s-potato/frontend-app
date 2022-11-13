@@ -40,6 +40,14 @@
                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     id="description" type="text" placeholder="Description" v-model="selectedTask.description">
                 </div>
+                <div class="mb-6" v-if="this.$auth.hasScope('admin')">
+                  <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
+                    Assign to
+                  </label>
+                  <select v-model="selectedTask.user_id" class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+                    <option v-for="(user, i) in users" :key="user.id" :value="user.id">{{user.name}}</option>
+                  </select>
+                </div>
               </form>
 
               <div class="items-center px-4 py-3">
@@ -92,14 +100,14 @@
                   {{ task.description }}</td>
                 <td
                   :class="[task.is_done ? 'line-through text-green-600' : '', `text-grey-darkest font-semibold text-gray-600`]">
-                  {{ task.creater.name }}</td>
+                  {{ task.creator.name }}</td>
                 <td
                   :class="[task.is_done ? 'line-through text-green-600' : '', `text-grey-darkest font-semibold text-gray-600`]">
                   {{ task.user.name }}</td>
                 <td>
                   <button v-if="task.is_done"
                     class="p-2 ml-4 mr-2 border-2 rounded-lg border-green text-white bg-green-500 hover:bg-green-700"
-                    @click="updateTask({...task, is_done: false}, i)">
+                    @click="updateTask({ ...task, is_done: false }, i)">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                       xmlns="http://www.w3.org/2000/svg">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -107,7 +115,8 @@
                     </svg>
                   </button>
 
-                  <button v-else class="p-2 ml-4 mr-2 border-2 rounded-lg border-grey" @click="updateTask({...task, is_done: true}, i)">
+                  <button v-else class="p-2 ml-4 mr-2 border-2 rounded-lg border-grey"
+                    @click="updateTask({ ...task, is_done: true }, i)">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                       xmlns="http://www.w3.org/2000/svg">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -115,7 +124,7 @@
                     </svg>
                   </button>
 
-                  <button
+                  <button v-if="$auth.hasScope('admin') || task.creator_id === $auth.user.id"
                     class="p-2 ml-4 mr-2 border-2 rounded-lg border-orange text-white bg-orange-500 hover:bg-orange-700"
                     @click="onToggle(); onEdit(task, i)">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -126,7 +135,7 @@
                     </svg>
                   </button>
 
-                  <button
+                  <button v-if="$auth.hasScope('admin') || task.creator_id === $auth.user.id"
                     class="flex-no-shrink p-2 ml-2 border-2 rounded-lg text-red border-red text-white bg-red-500 hover:bg-red-700"
                     @click="deleteTask(task, i)">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -155,10 +164,13 @@ export default {
       selectedTask: {},
       isOpen: false,
       tasks: [],
+      users: [],
     }
   },
   async fetch() {
     this.tasks = (await this.$axios.get(`${this.$axios.defaults.baseURL}tasks`)).data
+    if (this.$auth.hasScope('admin'))
+      this.users = (await this.$axios.get(`${this.$axios.defaults.baseURL}user`)).data
   },
   computed: {
     isModalVisible() {
@@ -182,7 +194,7 @@ export default {
       this.isNew = false
     },
 
-    addTask: function(task) {
+    addTask: function (task) {
       let api = `${this.$axios.defaults.baseURL}tasks/`;
       this.$axios.post(api, { ...task }).then(res => {
         this.tasks = res.data
